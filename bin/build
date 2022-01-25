@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "---> WKHTMLTOPDF Buildpack"
+
+LAYERS_DIR=$1
+ENV_DIR="$2/env"
+PLAN_PATH="$3"
+
+if [[ -f "$ENV_DIR/WKHTMLTOPDF_VERSION" ]]; then
+  WKHTMLTOPDF_VERSION=$(cat "$ENV_DIR/WKHTMLTOPDF_VERSION")
+else
+  WKHTMLTOPDF_VERSION="0.12.3"
+fi
+
+WKHTMLTOPDF_LAYER="$LAYERS_DIR/wkhtmltopdf"
+BIN_PATH="$WKHTMLTOPDF_LAYER/bin"
+LIB_PATH="$WKHTMLTOPDF_LAYER/lib"
+TMP_PATH="$WKHTMLTOPDF_LAYER/tmp"
+mkdir -p $BIN_PATH $LIB_PATH $TMP_PATH
+
+echo "WKHTMLTOPDF_VERSION: $WKHTMLTOPDF_VERSION"
+
+WKHTMLTOPDF_URL="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz"
+WKHTMLTOPDF_TAR="./wkhtmltox.tar.xz"
+WKHTMLTOPDF_PATH="$TMP_PATH/wkhtmltox"
+WKHTMLTOPDF_BINARIES="$WKHTMLTOPDF_PATH/bin"
+WKHTMLTOPDF_LIBS="$WKHTMLTOPDF_PATH/lib"
+
+BIN_DIR=$(cd $(dirname $0); pwd)
+
+echo "-----> Downloading wkhtmltopdf tar"
+wget -q -O $WKHTMLTOPDF_TAR $WKHTMLTOPDF_URL
+
+echo "-----> Unpacking tar"
+tar -xf $WKHTMLTOPDF_TAR -C $TMP_PATH
+
+echo "-----> Setting permissions"
+chmod +x $WKHTMLTOPDF_BINARIES/*
+
+echo "-----> Moving binaries to the right place"
+mv $WKHTMLTOPDF_BINARIES/* $BIN_PATH/
+
+echo "-----> Moving libs to the right place"
+mv $WKHTMLTOPDF_LIBS/* $LIB_PATH/
+
+# echo "-----> Cleaning up"
+# rm -rf $WKHTMLTOPDF_PATH
+
+# # Write layer file, making wkhtmltopdf available on launch
+echo -e '[types]\nlaunch = true' > "$LAYERS_DIR/wkhtmltopdf.toml"
+
+# # Write layer file, making wkhtmltopdf available on launch
+export PATH=$BIN_PATH:$PATH
+echo $LIB_PATH
+echo $BIN_PATH
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$LIB_PATH

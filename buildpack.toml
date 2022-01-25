@@ -1,0 +1,14 @@
+api = "0.7"
+
+[buildpack]
+id = "wkhtmltopdf-buildpack"
+version = "0.0.1"
+
+[[stacks]]
+id = "heroku-18"
+
+[[stacks]]
+id = "heroku-20"
+
+[[stacks]]
+id = "paketobuildpacks/builder:base"
